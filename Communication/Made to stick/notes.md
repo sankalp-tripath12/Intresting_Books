@@ -555,5 +555,5 @@ Sample fix: *"A first-time contributor forks a repo, excited to make their first
 
 ---
 
-Say **"Continue"** when ready for the **Final Test**.
+Say **"Continue"** when ready for the **Final Test
 
