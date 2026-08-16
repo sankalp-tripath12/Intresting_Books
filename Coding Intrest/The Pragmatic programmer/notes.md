@@ -2440,4 +2440,3 @@ DevOps & CI/CD (Automation, Version Control, Testing)
 
 That completes **The Pragmatic Programmer**, cover to cover. 🎉
 
-If you'd like, tell me which book comes next — or if you want, we can pause here and you can attempt the Final Test above first, and I'll review your answers.
