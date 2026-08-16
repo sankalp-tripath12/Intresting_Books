@@ -507,5 +507,4 @@ Proposal: Human-AI Symbiosis (let AI optimize, redirect wealth to dignify human/
 
 We've now covered the entire book — overview, historical trigger (AlphaGo), the Four Waves framework, why China caught up, job displacement analysis, the personal/philosophical core, and the closing policy vision.
 
-Say **"Continue"** and I'll give you the **Final Comprehensive Test for AI Superpowers** — designed to check real understanding of the frameworks, not just recall of facts.
 

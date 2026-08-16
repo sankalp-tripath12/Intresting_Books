@@ -2869,6 +2869,3 @@ Counter/defaultdict [Ch2]
     = the engine behind word counts, graphs, n-grams, GROUP BY, and MapReduce
 ```
 
----
-
-We're now ready for your **Final Test** and **practice problems**, as requested. Given how much ground we've covered, I want to build this properly rather than rush it.

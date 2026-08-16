@@ -999,3 +999,603 @@ Every long telegraph and early telephone line used chains of relays. More import
 You just predicted exactly where the book goes next. We now have two separate ideas sitting side by side: **relays** (one signal automatically controlling another) and **AND/OR logic** (built from switch combinations). Chapter 8 fuses them together — and this is the moment the book stops being about *sending* signals and starts being about **building machines that compute**.
 
 Say **"Continue"** for Chapter 8 (*Relays and Gates*).
+
+
+## PART 2 — CHAPTER 8: RELAYS AND GATES
+
+### Where We Pick Up 🔥
+
+Chapter 6 showed you AND and OR built from switches — but a human still had to flip those switches by hand. Chapter 7 gave you the relay — a device that lets **one electrical signal automatically flip another switch**, no human hand required.
+
+Now Petzold asks the obvious next question:
+
+> **What if we replace the manually-flipped switches in our AND/OR circuits from Chapter 6 with relays instead?**
+
+The moment you do this, something remarkable happens: your logic circuit stops needing a person to operate it. It becomes something that can respond **automatically** to electrical inputs. This is the exact moment the book crosses from "clever wiring" into "the beginning of a machine that thinks."
+
+---
+
+### ⭐ MUST KNOW: From Switches to Logic Gates
+
+**Simple Meaning:**
+A **logic gate** is a small circuit — built from relays — that takes one or more electrical inputs (each either "on" or "off," now more commonly labeled **1** or **0**) and produces a single output that also is either 1 or 0, following a specific logical rule.
+
+**Notation shift:**
+Instead of drawing full switch-and-wire diagrams every time, Petzold introduces the standard simplified way engineers draw these circuits:
+* Inputs are shown as small boxes displaying **0** (off) or **1** (on)
+* The gate itself is drawn as a simple labeled shape
+* The output is a circle showing the resulting **0** or **1**
+
+This is a big deal pedagogically: **we're moving from physical circuit diagrams to abstract symbols** — the same shift that happens throughout computer science, where physical mechanisms get replaced by clean symbolic notation once we trust the mechanism works.
+
+---
+
+### The Four Basic Gates
+
+#### 1. AND Gate
+Built from relays wired the way Chapter 6's *series* switches were.
+
+| Input A | Input B | Output |
+|---|---|---|
+| 0 | 0 | 0 |
+| 0 | 1 | 0 |
+| 1 | 0 | 0 |
+| 1 | 1 | **1** |
+
+**Rule:** Output is 1 only when **both** inputs are 1.
+
+#### 2. OR Gate
+Built from relays wired the way Chapter 6's *parallel* switches were.
+
+| Input A | Input B | Output |
+|---|---|---|
+| 0 | 0 | 0 |
+| 0 | 1 | **1** |
+| 1 | 0 | **1** |
+| 1 | 1 | **1** |
+
+**Rule:** Output is 1 if **either** input is 1.
+
+#### 3. NOT Gate (Inverter) — 🔥 New in This Chapter
+
+**Simple Meaning:**
+A NOT gate has just **one** input and flips it: 0 becomes 1, and 1 becomes 0.
+
+| Input A | Output |
+|---|---|
+| 0 | **1** |
+| 1 | **0** |
+
+**How It Works (the clever relay trick):**
+A relay can be wired in an "inverse" configuration: instead of the electromagnet *closing* a switch when energized, it's arranged so the switch starts out **naturally closed** (connected, current flowing) — and energizing the electromagnet **pulls it open**, breaking the connection. So: no input signal → circuit stays connected → output is "on." Input signal arrives → circuit breaks → output is "off." The relay has inverted its own trigger.
+
+**Why It Matters:**
+This is genuinely new — Chapters 4–7 never showed you how to build something that says "off means on, and on means off." That takes a specific relay wiring trick, not just series/parallel combination. NOT is a fundamentally different *kind* of building block from AND/OR.
+
+#### 4. Combining Gates: NAND and NOR
+
+* **NAND** = AND followed by NOT (invert the AND's output)
+* **NOR** = OR followed by NOT (invert the OR's output)
+
+---
+
+### 🔥 VERY IMPORTANT: De Morgan's Insight — The Gates Are All Secretly Related
+
+Petzold brings in 19th-century mathematician **Augustus De Morgan**, who proved that these logical operations aren't actually four separate, independent ideas — they're deeply interconnected:
+
+* **An AND gate with both inputs inverted behaves exactly like a NOR gate.**
+* **An OR gate with both inputs inverted behaves exactly like a NAND gate.**
+
+**Why It Matters:**
+This isn't just a cute mathematical curiosity — it has real, practical engineering consequences:
+
+* If you can build **just one type of gate reliably** (say, NAND), De Morgan's relationships mean you can construct **all the other gates** — AND, OR, NOT — purely out of combinations of that one gate.
+* This is *exactly* why real-world computer chips are often built almost entirely from NAND gates (or NOR gates) — manufacturing one highly-optimized gate type repeatedly is far more efficient than manufacturing four different gate types.
+
+**Key Idea (write this down):**
+> *You don't need every logical operation to be a fundamentally different physical mechanism. A small set of interchangeable building blocks — even just one type of gate — is enough to construct any logical function whatsoever, given enough of them wired together correctly.*
+
+This is your first glimpse of a concept called **functional completeness** — though Petzold won't necessarily use that term, this is exactly what he's demonstrating.
+
+---
+
+### Revisiting the Kitten Selector — Now With Gates
+
+Recall Chapter 6's playful example: switches wired to determine if a kitten is "solid black." Petzold now rebuilds this **exact same logical circuit using gates instead of switches** — same logic, cleaner abstraction. This is a deliberate before/after: it proves that **anything you could do with hand-wired switches, you can now do with self-contained gate components**, snapped together like logical Lego bricks.
+
+---
+
+### Step-by-Step: Why This Chapter Is a Turning Point
+
+1. Chapter 6: logic requires a **human** to flip switches by hand.
+2. Chapter 7: relays let **one signal automatically flip a switch** in a separate circuit.
+3. **Chapter 8: combine these two ideas** — relays inside AND/OR/NOT structures — and you get logic gates that respond to electrical inputs **entirely automatically**.
+4. Because gates can be drawn and reasoned about **abstractly** (as 0s and 1s in, 0s and 1s out), you can now start **designing much larger, more complex logical machines on paper**, without worrying about the messy relay wiring underneath. The abstraction *hides* the relays, letting you think at a higher level.
+
+**Key Idea (the big one):**
+> *This chapter marks the moment engineering shifts from "wire it by hand" to "design with reusable, abstract building blocks." Every layer of computing you'll ever learn — programming languages, operating systems, apps — exists because of exactly this kind of abstraction, repeated over and over, at higher and higher levels.*
+
+---
+
+### Connection to Previous Chapters
+
+| Chapter | Contribution |
+|---|---|
+| 6 | AND/OR logic, but switches operated by hand |
+| 7 | Relays: one signal automatically controls another |
+| **8** | **Relays + AND/OR/NOT structure = self-contained "gates," fully automatic, and abstractly reusable** |
+
+---
+
+## Chapter 8 Summary
+
+**Key Concepts:**
+* Logic gates (AND, OR, NOT, NAND, NOR) are small circuits — built from relays — that transform 0/1 inputs into a 0/1 output
+* NOT gates are built using an "inverse" relay wiring where the natural resting state is closed, and the signal opens it
+* De Morgan proved AND/OR/NOT are deeply interrelated: NAND and NOR alone are enough to build every other gate
+* Circuits can now be reasoned about abstractly, using 0/1 notation, without tracking every physical wire
+
+**Mental Model:**
+Think of a logic gate as a tiny, reusable "black box": you don't need to know or care about the relays inside — you just need to know its input/output rule, the same way you use a calculator without knowing its internal circuitry.
+
+**Logic-Building Lesson:**
+This chapter is your first real taste of **abstraction as a design tool**: build a small, trustworthy component once, then reason about *combinations* of that component without re-deriving its internals every time. This exact skill — trusting an abstraction and building on top of it — is the core discipline of all software engineering.
+
+**Common Mistake:**
+Assuming NAND/NOR are just "extra" gates thrown in for completeness. In real hardware, they're often the *primary* building blocks — AND, OR, and NOT are frequently constructed *from* NAND or NOR, not the other way around.
+
+**Real-World Application:**
+Every microchip you've ever used — in your phone, laptop, car — is fundamentally a colossal network of logic gates just like these, now built from transistors instead of relays, and shrunk down to billions per chip.
+
+---
+
+### Self-Test
+
+1. Why does a NOT gate require a different relay wiring trick than AND or OR gates?
+2. State De Morgan's relationship between AND/OR and NAND/NOR in your own words.
+3. Why is it practically useful, in real chip manufacturing, that all gates can be built from just NAND gates?
+4. What's the difference between reasoning about a circuit at the "relay/wire" level versus the "gate/abstract 0-1" level? Why is the second more powerful for designing complex systems?
+5. Using only AND, OR, and NOT gates, could you build a NAND gate? Sketch, in words, how you'd do it (hint: think about what NAND's truth table needs, and work backward).
+
+---
+
+We now have fully automatic, self-contained logical building blocks. But so far, everything we've represented has been simple: on/off, true/false, yes/no. Real communication — and real computers — need to represent something richer: **actual numbers**. Before we can build a machine that calculates, we need to understand how numbers themselves work — and it turns out the number system most of us grew up with (base 10) has a very specific, almost accidental origin. That's where Chapter 9 begins.
+
+Say **"Continue"** for Chapter 9 (*Our Ten Digits*).
+
+## PART 2 — CHAPTER 9: OUR TEN DIGITS
+
+### The Question Nobody Asks 🔥
+
+Why do we count using **ten** digits — 0 through 9? Petzold's answer is almost embarrassingly simple, and it's hiding in plain sight: **count on your fingers.** Literally. The word "digit" itself comes from the Latin *digiti*, meaning **fingers**.
+
+But this chapter isn't really about *why ten*. It's about something far more important for the rest of the book: **what actually makes our number system work**, mechanically — and it turns out most of history got this wrong for thousands of years.
+
+---
+
+### The Problem: Most Early Number Systems Were Broken (in an important way)
+
+Petzold walks us through **Roman numerals** as the prime example of a number system that seems fine at first, but breaks down at scale.
+
+**How Roman numerals work:**
+* I = 1, V = 5, X = 10, L = 50, C = 100, and so on
+* Each symbol has **one fixed value**, no matter where it appears
+* To write 228, you write CCXXVIII: C+C+X+X+V+I+I+I = 100+100+10+10+5+1+1+1 = 228
+
+**Natural first reaction:** Seems workable — you just add up the symbols.
+
+**Problem with that — and this is the key insight of the chapter:**
+* Try doing **long multiplication or division** with CCXXVIII × XIV. There's no clean, mechanical procedure — Romans and medieval Europeans genuinely struggled with arithmetic because of this.
+* Every new "order of magnitude" (tens, hundreds, thousands) needs a **brand new symbol** (I, X, C, M...). What happens when you need a million? You keep needing more symbols, forever.
+* The value of a symbol **never changes based on position** — an X always means 10, whether it's the first symbol or the last.
+
+---
+
+### ⭐ MUST KNOW: The Hindu-Arabic Breakthrough — Positional Notation
+
+**Simple Meaning:**
+In a **positional** number system, a digit's value depends **on where it sits**, not just what symbol it is. The digit "1" means something completely different in 1, 10, and 100 — even though it's visually the same symbol.
+
+**Why It Matters — the profound part:**
+> *"Both 100 and 1,000,000 have only a single 1 in them, yet we all know that a million is much larger than a hundred."*
+
+Position, not symbol, carries the meaning. This is a genuinely different *kind* of idea than Roman numerals — not just a different alphabet, but a fundamentally different *system of representing quantity*.
+
+**Historical Note 📌:**
+This system originated in India and was carried into the Islamic world and then Europe largely through the Persian mathematician **al-Khwarizmi** (from whose name we get the word **"algorithm"** — yes, that word traces directly back to this exact chapter's subject matter). His book on algebra (~820 CE) used Hindu numerals; a Latin translation around 1145 CE helped spread positional notation across Europe, gradually displacing Roman numerals.
+
+---
+
+### 🔥 VERY IMPORTANT: Positional Notation Needs a Placeholder — Zero
+
+**Simple Meaning:**
+For position to mean anything, you need a way to say "there's *nothing* in this position" — otherwise 1 and 10 and 100 would be indistinguishable. That's the job of **0**.
+
+**Why It Matters:**
+* Zero isn't just "a number for nothing" — it's a **structural tool** that makes positional notation possible at all.
+* Without a placeholder digit, you cannot tell 1 from 10 from 100 by writing "1" alone in different imagined positions — you need something to explicitly occupy the empty positions.
+* This is why cultures that developed positional systems (Babylonians, later Hindu mathematicians) all eventually needed some symbol for "empty position," even before they treated zero as a "real" number in arithmetic.
+
+**Key Idea (write this down):**
+> *A positional number system isn't defined by which specific digit-symbols you use — it's defined by the rule "value = digit × (base raised to the power of its position)." Change the base, and you get a completely different but equally valid number system — this is exactly the door Chapter 10 is about to walk through.*
+
+---
+
+### Step-by-Step: How Positional Value Actually Works
+
+Let's dry-run the number **555** to see how position gives each identical digit a different meaning:
+
+| Position (right to left) | Digit | Place Value | Contribution |
+|---|---|---|---|
+| Position 0 (ones) | 5 | $10^0 = 1$ | $5 \times 1 = 5$ |
+| Position 1 (tens) | 5 | $10^1 = 10$ | $5 \times 10 = 50$ |
+| Position 2 (hundreds) | 5 | $10^2 = 100$ | $5 \times 100 = 500$ |
+
+**Total:** $500 + 50 + 5 = 555$
+
+**General Formula:**
+$$\text{Number} = \sum_{i} d_i \times B^i$$
+
+Where $d_i$ is the digit at position $i$, and $B$ is the **base** (10, in our everyday system).
+
+---
+
+### 📌 GOOD TO KNOW: Why Ten? (The Almost-Accidental Answer)
+
+* Humans have 10 fingers. That's genuinely the whole reason.
+* Nothing about mathematics *requires* base 10 — it's a biological accident, not a mathematical necessity.
+* Petzold plants this deliberately: if base 10 is just an arbitrary choice tied to human anatomy, then **other bases are equally legitimate number systems** — just built around a different count of digits.
+
+This sets up the entire next chapter perfectly.
+
+---
+
+### Connection to Previous Chapters
+
+| Chapter | Contribution |
+|---|---|
+| 2 | Codes built from repeated symbols can represent enormous numbers of possibilities ($2^n$) |
+| 3 | Braille's 6-position binary structure was really a "base-2 place system" without anyone calling it that |
+| **9** | **Positional notation reveals that *any* base could work — 10 is a human accident, not a mathematical law** |
+
+---
+
+## Chapter 9 Summary
+
+**Key Concepts:**
+* Roman numerals are non-positional: each symbol has one fixed value regardless of position, making arithmetic clumsy
+* Hindu-Arabic numerals are positional: a digit's value depends on where it appears
+* Zero is essential as a **placeholder**, making positional notation mathematically possible
+* Any number can be expressed as $\sum d_i \times B^i$ — and this formula works for *any* base $B$, not just 10
+* Base 10 exists because humans have 10 fingers — a biological, not mathematical, reason
+
+**Mental Model:**
+Think of each digit's position as a labeled "bucket" with a specific capacity ($1, 10, 100, 1000...$) — the digit tells you *how many* of that bucket's capacity to count, and the bucket's position tells you *how big* each unit in that bucket is worth.
+
+**Logic-Building Lesson:**
+Recognizing that a system's specific "flavor" (base 10, in this case) is arbitrary while its underlying *structure* (positional value) is what really matters — this is a core CS skill: separating an idea's essential logic from its incidental implementation detail.
+
+**Common Mistake:**
+Assuming base 10 is somehow mathematically special or "natural." It's not — it's a historical accident of human anatomy, and the positional-notation *idea* works identically well in any base.
+
+**Real-World Application:**
+Every calculation you've ever done — sums, prices, dates — silently relies on positional notation. And, as the next chapter will reveal, this exact structure, just with a different base, is what lets computers represent numbers using nothing but on/off switches.
+
+---
+
+### Self-Test
+
+1. Why is arithmetic (especially multiplication) so much harder using Roman numerals than Hindu-Arabic numerals?
+2. Explain, in your own words, why zero is necessary for positional notation to work — not just "nice to have."
+3. Write out the place-value breakdown (like the 555 example) for the number 4,207.
+4. Why does Petzold call base 10 an "accident" rather than a mathematical necessity?
+5. Using the formula $\sum d_i \times B^i$, what would the digits "101" represent if the base $B$ were **2** instead of 10? (Try computing it — you'll want this answer for the next chapter!)
+
+---
+
+You just calculated your first binary number in Question 5, whether you realized it or not. We've now proven that positional notation works for *any* base — so what happens when we push that idea to its logical extreme, and ask: **what's the smallest possible base a number system could have?** The answer connects directly back to every on/off switch, gate, and relay we've built so far. That's Chapter 10.
+
+Say **"Continue"** for Chapter 10 (*Alternative 10s*).
+
+## PART 2 — CHAPTER 10: ALTERNATIVE 10s
+
+### The Pun That Is Actually the Whole Point 🔥
+
+The chapter title is a clever trick, and once you see it, the whole chapter clicks into place:
+
+> In **any** number base, the two digits **"1" and "0"** written together always mean the exact same thing: **"one full unit of that base, and nothing left over."**
+
+* In base 10: **10** means "ten"
+* In base 8: **10** means "eight"
+* In base 2: **10** means "two"
+* In base 16: **10** means "sixteen"
+
+The *symbols* "1" and "0" never change. What changes is **what they're counting.** This is the punchline of Chapter 9 taken to its logical conclusion: positional notation isn't married to base 10 — it's a general-purpose *machine* that works identically in any base you plug in.
+
+---
+
+### ⭐ MUST KNOW: What a "Base" Really Controls
+
+**Simple Meaning:**
+The base of a number system determines exactly two things:
+1. **How many distinct digit symbols exist** (base $B$ needs exactly $B$ symbols: 0 through $B-1$)
+2. **What each position is "worth"** — position $i$ is worth $B^i$
+
+**Why It Matters:**
+Once you understand *this rule*, you can construct — and understand — a number system in **any** base, not just the ones you were taught in school.
+
+---
+
+### Meet the Alternative Bases
+
+#### Binary (Base 2) — The One That Matters Most for This Book
+
+* **Digits available:** just 0 and 1
+* **Place values:** ..., 16, 8, 4, 2, 1 (powers of 2)
+
+**Worked Example — decode binary 101:**
+
+| Position | Digit | Place Value ($2^i$) | Contribution |
+|---|---|---|---|
+| 2 | 1 | 4 | 4 |
+| 1 | 0 | 2 | 0 |
+| 0 | 1 | 1 | 1 |
+
+**Total:** $4 + 0 + 1 = 5$
+
+So binary `101` = decimal `5`. (If you solved the self-test from Chapter 9, you already got this!)
+
+#### Octal (Base 8)
+
+* **Digits available:** 0 through 7 (no 8 or 9 — there's no symbol for "eight" *within* base 8, same way there's no single symbol for "ten" within base 10!)
+* **Place values:** ..., 64, 8, 1 (powers of 8)
+
+**Worked Example — decode octal 642:**
+
+$$6 \times 8^2 + 4 \times 8^1 + 2 \times 8^0 = 6(64) + 4(8) + 2(1) = 384 + 32 + 2 = 418$$
+
+#### Base 4 (Quaternary) — Briefly Mentioned as a Stepping Stone
+
+* Digits: 0, 1, 2, 3
+* Useful mainly as a teaching bridge — it's small enough to fully enumerate by hand, which is why the book uses it briefly to build intuition before jumping to binary.
+
+---
+
+### 🔥 VERY IMPORTANT: Why Octal Specifically? (Not Just an Arbitrary Choice)
+
+Here's the elegant reason octal shows up right alongside binary, and it's not random:
+
+**Key Idea:**
+> *Because 8 is a power of 2 ($8 = 2^3$), converting between binary and octal is almost mechanical — no real math required. You just group binary digits into clusters of 3, and each cluster maps directly to one octal digit.*
+
+**Step-by-Step Conversion (binary → octal):**
+
+Take the binary number `101100000110`:
+
+1. Group into clusters of 3, from the right:
+```text
+101 100 000 110
+```
+2. Convert each group of 3 independently:
+```text
+101 = 5      100 = 4      000 = 0      110 = 6
+```
+3. Read off the octal digits: **5401**
+
+**Why It Matters:**
+This is your first real look at something crucial for the rest of the book: **bases that are powers of 2 (like 8 and, later, 16) let humans read and write binary-based data far more compactly and readably than raw strings of 1s and 0s** — while still preserving an exact, effortless translation back to binary. This exact trick reappears massively when hexadecimal shows up in Chapter 12.
+
+---
+
+### Building on Chapter 8's Logic Gates — Encoding and Decoding Octal Circuits
+
+This is the moment the chapter earns its place right after the "gates" chapter rather than being purely mathematical. Petzold shows that you can build **actual gate circuits** that:
+
+* **Encode:** take a physical input (say, one of 8 buttons/switches representing digits 0–7) and produce the corresponding **3-bit binary output**
+* **Decode:** take a **3-bit binary input** and activate exactly one of 8 outputs, corresponding to that binary value
+
+**Why This Matters:**
+This is a small but important preview: gates aren't just for abstract true/false logic (Chapter 6's kitten example) — they can be wired specifically to **translate between number representations**, entirely automatically, with no human doing the base conversion by hand. This is a real, tangible glimpse of hardware performing what looks like "thinking."
+
+---
+
+### 📌 GOOD TO KNOW: How Many Combinations, Revisited
+
+Remember Chapter 2's doubling pattern from Morse code? It generalizes perfectly here:
+
+> With $n$ bits (binary digits), you can represent exactly $2^n$ distinct values.
+
+| Bits | Combinations |
+|---|---|
+| 1 | $2^1 = 2$ |
+| 2 | $2^2 = 4$ |
+| 3 | $2^3 = 8$ |
+| 4 | $2^4 = 16$ |
+| 8 | $2^8 = 256$ |
+
+Petzold ties this to something very relatable: **phone numbers**. A 3-digit area code (base 10) allows $10^3 = 1000$ possible codes. A 7-digit phone number allows $10^7 = 10{,}000{,}000$ combinations. Same underlying idea as $2^n$ — just base 10 instead of base 2. The "how many things can I represent with $n$ digits in base $B$" formula is always $B^n$.
+
+---
+
+### Connection to Previous Chapters
+
+| Chapter | Contribution |
+|---|---|
+| 8 | Logic gates: automatic, abstract 0/1 processing |
+| 9 | Positional notation is a general rule, not tied to base 10 |
+| **10** | **Any base can plug into that rule — and binary, specifically, is what switches and gates naturally produce** |
+
+---
+
+## Chapter 10 Summary
+
+**Key Concepts:**
+* "10" in any base always means "one full unit of that base" — the pun behind the chapter title
+* Binary (base 2) uses only digits 0 and 1; place values are powers of 2
+* Octal (base 8) is convenient because $8 = 2^3$, making binary↔octal conversion a simple 3-bit grouping trick
+* Logic gates (from Chapter 8) can be wired to automatically encode/decode between binary and other bases
+* With $n$ digits in base $B$, you can represent exactly $B^n$ distinct values
+
+**Mental Model:**
+Think of a number base as a "counting wheel" with a certain number of positions before it rolls over to the next place. Base 10's wheel has 10 stops (0–9); base 2's wheel has only 2 (0–1) — same mechanism, different-sized wheel.
+
+**Logic-Building Lesson:**
+Recognizing when a base is a **power of another base** (like 8 = 2³) lets you shortcut conversions completely — no arithmetic needed, just regrouping digits. This "spot the structural relationship" instinct is hugely useful throughout CS (think: array indexing, memory alignment, bit manipulation).
+
+**Common Mistake:**
+Assuming octal or binary numbers are somehow "special" or "computer math" distinct from ordinary math. They follow the *exact same* positional rule as decimal — only the base value changes.
+
+**Real-World Application:**
+Binary is the language every digital circuit naturally "speaks" (on/off = 1/0). Octal and, soon, hexadecimal exist purely as **human-friendly shorthand** for long binary strings — a convenience layer, not a different kind of math.
+
+---
+
+### Self-Test
+
+1. Why does "10" mean something different in base 8 than in base 2, even though it's written with the same two symbols?
+2. Convert binary `110011` to octal using the group-of-3 trick.
+3. Why specifically is base 8 (and not, say, base 7 or base 9) especially convenient for converting to/from binary?
+4. Using $B^n$, how many distinct values can be represented using 4 digits in base 8?
+5. Could you build an "encoder" circuit using AND/OR/NOT gates that takes a single "on" switch (out of 4 possible switches) and outputs the correct 2-bit binary code for which switch is on? Sketch the logic in words.
+
+---
+
+We now have binary and octal both fully understood as legitimate positional systems — not tricks, just base 10's siblings. But binary numbers get long and unwieldy fast (imagine writing a large number using only 1s and 0s!). The next chapter dives deeper into exactly *how* binary digits — now formally called **bits** — combine, and starts building toward the vocabulary you'll use for the rest of the book: bits, nibbles, and bytes.
+
+Say **"Continue"** for Chapter 11 (*Bit by Bit by Bit*).
+
+## PART 2 — CHAPTER 11: BIT BY BIT BY BIT
+
+### An Unexpected Opening 🔥
+
+Petzold opens with something delightfully unexpected: the 1973 pop song *"Tie a Yellow Ribbon Round the Ole Oak Tree"* by Tony Orlando. In the song, a man coming home from prison asks his beloved for the simplest possible answer — tie a ribbon on the tree if she wants him back, leave it bare if she doesn't. No essays, no explanations.
+
+> He didn't want any ifs, ands, or buts. He wanted **one bit of information**: yes or no.
+
+This is a genuinely clever way to introduce the star of this chapter: the **bit** — the smallest possible unit of information, representing a single choice between exactly two possibilities.
+
+---
+
+### ⭐ MUST KNOW: What "Bit" Actually Means
+
+**Simple Meaning:**
+"Bit" is a contraction of **binary digit** — a single 0 or a single 1.
+
+**Historical Note 📌:**
+The term was coined by statistician **John W. Tukey**, shortly after he joined mathematician John von Neumann's computing project in November 1945. It's a young word, historically speaking — barely older than the electronic computer itself.
+
+**Why It Matters:**
+A single bit can represent exactly **one binary decision**: on/off, yes/no, true/false, ribbon-on-the-tree or no-ribbon. By itself, it's not very expressive — just like a single flashlight flash from Chapter 1. The real power comes from **combining many bits together**, exactly as we saw with Morse code's dots/dashes and Braille's raised/flat dots.
+
+---
+
+### Connecting the Dots (Literally) Back Through the Whole Book
+
+This chapter is deliberately a "grand unification" moment. Petzold explicitly ties together every 2-state idea we've encountered so far:
+
+| Earlier Chapter | The "Bit" in Disguise |
+|---|---|
+| 1 — Flashlight signals | flash / no-flash |
+| 2 — Morse code | dot / dash |
+| 3 — Braille | raised / flat |
+| 4 — Switches | closed / open |
+| 6 — Boolean logic | true / false |
+| 8 — Logic gates | 1 / 0 |
+| 10 — Binary numbers | digit 1 / digit 0 |
+
+**Key Idea (write this down):**
+> *Every single one of these "two-state" ideas from the entire book so far is the exact same underlying concept — a bit — just wearing a different costume depending on the context. Once you can see "bit" hiding inside all of them, the whole first half of the book snaps into one unified picture.*
+
+---
+
+### 🔥 VERY IMPORTANT: How Many Bits Do You Need?
+
+This is the chapter's central *practical* question, and it directly extends the "counting combinations" logic from Chapters 2 and 3.
+
+**The Rule (already familiar, now formalized):**
+$$\text{Number of distinct values representable} = 2^{(\text{number of bits})}$$
+
+**Step-by-Step — How Many Bits To Represent...?**
+
+* **2 things** (yes/no) → need $2^1 = 2$ → **1 bit**
+* **4 things** → need $2^2 = 4$ → **2 bits**
+* **8 things** → need $2^3 = 8$ → **3 bits**
+* **26 letters of the alphabet** → $2^4 = 16$ isn't enough, $2^5 = 32$ is → **5 bits minimum**
+
+**Why It Matters:**
+This becomes an essential design question throughout the rest of the book (and throughout real computer engineering): *given something you need to represent, what's the minimum number of bits required?* This exact question will resurface when we look at representing full alphabets (Chapter 13), numbers of any size, and eventually memory addresses.
+
+---
+
+### 📌 GOOD TO KNOW: Bits Accumulate Into Bigger Structures
+
+Petzold begins introducing the vocabulary that will carry through the rest of the book — the idea that bits don't stay isolated, they get **grouped**:
+
+* A single bit: one binary digit
+* A **group of bits** can represent a number, a letter, an instruction — anything, as long as you agree in advance (echoing Chapter 1's core lesson: *meaning is assigned, not inherent*) on how to interpret the pattern
+* The size of the group you choose to work with becomes an important, recurring design decision — foreshadowing the formal terms **nibble** and **byte**, which the very next chapter names explicitly
+
+**Why It Matters:**
+This is a subtle but important shift: so far we've mostly discussed *individual* bits and small examples. From here on, the book starts thinking in terms of **structured groups of bits** — which is exactly how real computer memory and processing actually work.
+
+---
+
+### Building Intuition: Why "Just Two States" Keeps Winning
+
+Petzold uses this chapter to reinforce something you might still be a little skeptical about: why not use, say, base-4 or base-10 circuits directly, instead of base-2?
+
+* **Reliability:** A physical device (relay, switch, later — transistor) is far easier to build so it's *unambiguously* one of two states (fully on or fully off) than to reliably distinguish among four, eight, or ten *different* voltage levels.
+* **Noise tolerance:** Electrical signals are noisy — voltage fluctuates. A system with only two widely-separated states (say, "0 volts" and "5 volts") tolerates small fluctuations without misreading the signal. A system trying to distinguish ten close voltage levels would misread constantly.
+* **Simplicity compounds:** Because 2-state logic is so reliable, you can chain *millions* of these devices together (as later chapters will do) and still trust the overall result — a luxury you'd lose quickly with noisier, multi-state hardware.
+
+**Key Idea:**
+> *Binary isn't chosen because 2 is a mathematically magical number. It's chosen because a system built from simple, reliable, unambiguous 2-state components can be scaled up to enormous complexity without losing reliability — and that scalability is exactly what building a computer requires.*
+
+---
+
+### Connection to Previous Chapters
+
+| Chapter | Contribution |
+|---|---|
+| 9–10 | Positional notation works in any base; binary is base 2 |
+| **11** | **The individual digit of binary — the "bit" — is formally named and shown to be the same concept underlying every 2-state idea in the book so far** |
+
+---
+
+## Chapter 11 Summary
+
+**Key Concepts:**
+* A "bit" (binary digit) represents a single choice between two possibilities — coined by John W. Tukey in 1945
+* Every 2-state concept from earlier chapters (flashlight flashes, Morse dots/dashes, Braille dots, switches, logic gate outputs) is fundamentally the same thing: a bit
+* $2^n$ tells you how many distinct values $n$ bits can represent — the same formula from Chapters 2 and 3, now formalized
+* Binary wins as a hardware choice not because 2 is special mathematically, but because 2-state systems are dramatically more reliable and noise-tolerant to build at scale
+* Bits are increasingly discussed as **groups**, setting up the next chapter's vocabulary (nibbles, bytes)
+
+**Mental Model:**
+Picture a bit as the smallest possible "yes/no" question a machine can be asked. Everything a computer does — no matter how sophisticated — ultimately reduces to asking and answering enormous numbers of these tiny yes/no questions, extremely fast.
+
+**Logic-Building Lesson:**
+Recognizing that seemingly different concepts (a flash of light, a raised Braille dot, a closed switch, a true/false value) are really the *same underlying structure* is a core CS skill — this is literally what "abstraction" means: seeing past the surface-level implementation to the shared logical pattern underneath.
+
+**Common Mistake:**
+Thinking of "bit" as some special computer-only unit. It's a general concept — a unit of binary choice — that computers happen to implement electronically, but which existed conceptually (Morse, Braille) long before electronic computers.
+
+**Real-World Application:**
+Every measure of digital storage or bandwidth you've ever seen — megabits per second, gigabytes of storage — is built from counting exactly this unit, the bit, in ever-larger groupings.
+
+---
+
+### Self-Test
+
+1. Why is a single bit, by itself, limited in how much it can represent — and how do we overcome that limitation?
+2. Name three completely different physical or historical examples (from this book) that are secretly all "a bit" in disguise.
+3. How many bits are needed to represent 100 distinct values? (Careful — check your power of 2 boundaries!)
+4. Why is a two-state (binary) electrical system more reliable than, say, a ten-state system, in the presence of electrical noise?
+5. Why does Petzold introduce the *term* "bit" only now, in Chapter 11, rather than back in Chapter 4 when switches were first introduced?
+
+---
+
+We now have a name — "bit" — for the fundamental unit running through this entire book. But real computers don't work with bits one at a time; they work with **organized groups** of them. The next chapter gives those groups their now-famous names — starting with a small joke of a word: the **nibble** — and introduces a number system almost every programmer eventually has to learn: **hexadecimal**.
+
+Say **"Continue"** for Chapter 12 (*Bytes and Hexadecimal*).
+
