@@ -1973,3 +1973,902 @@ Random Forests = many trees + voting → more stable, less variance (echoes CLT,
 
 Say **"Continue"** for **Chapter 18 — Neural Networks**, where distance, `dot()`, gradient descent, and the logistic/sigmoid function from Chapter 16 **all reunite** to build your first neural network completely from scratch.
 
+## 23. Chapter 18: Neural Networks — Teaching
+
+### Why This Chapter Feels Like Everything Coming Together
+
+- Neural networks are often mythologized as mysterious "black boxes." Grus's entire goal here: prove that a neural network is just **`dot()` + sigmoid, stacked in layers, trained by gradient descent** — every single ingredient you've already built.
+- **Framing:** if this chapter feels intimidating going in, remember — by the end, you'll realize it's the *least* new math in the whole book so far. It's mostly **composition** of old tools, not new tools.
+
+---
+
+### Concept 1 — The Perceptron: One Neuron, Rebuilding Logistic Regression
+
+```python
+def perceptron_output(weights: Vector, bias: float, x: Vector) -> float:
+    calculation = dot(weights, x) + bias
+    return step_function(calculation)
+```
+
+- **Wait, why does that happen — this looks exactly like something you've built before?** Because it is — `dot(weights, x) + bias` is **identical** to `dot(x, beta)` from Chapter 15/16, just with the intercept named `bias` instead of folding it into the vector.
+- **Oh, that's the idea!** A single "neuron" is nothing more than a **linear regression score, passed through a squashing function** — exactly Chapter 16's logistic regression, dressed in new vocabulary ("neuron," "weights," "bias" instead of "beta," "coefficients," "intercept").
+
+---
+
+### Concept 2 — Why One Neuron Isn't Enough: The XOR Problem
+
+- **Interesting problem:** can a single perceptron learn the XOR function (output 1 if exactly one of two inputs is 1, else 0)?
+- **Wait, why does that happen?** No — XOR is **not linearly separable.** You cannot draw a single straight line that correctly separates the "1" outputs from the "0" outputs on a 2D plot of the inputs. A single neuron can only produce one straight decision boundary — exactly the same fundamental limitation logistic regression has.
+- **Oh, THAT's the idea!** This is the entire motivation for **stacking neurons into layers.** A single line can't solve XOR — but *combining multiple lines* (multiple neurons feeding into another neuron) can carve out more complex, curved decision regions.
+
+---
+
+### Concept 3 — The Sigmoid Replaces the Step Function
+
+```python
+def sigmoid(t: float) -> float:
+    return 1 / (1 + math.exp(-t))
+```
+
+- **Direct callback:** this is **exactly** `logistic()` from Chapter 16, renamed.
+- **Interesting problem:** why not just keep using the step function (0 or 1, sharp cutoff) from the simple perceptron?
+- **Wait, why does that happen?** The step function has **zero gradient almost everywhere** (it's flat at 0, flat at 1, and undefined/infinite right at the jump). You cannot run gradient descent (Ch8) on something with no usable slope information.
+- **Oh, that's the idea!** The sigmoid is smooth and differentiable *everywhere* — exactly why Chapter 16 chose it in the first place. **This is the same reason, reapplied**: you need smooth, non-zero gradients everywhere for gradient descent to actually learn.
+
+---
+
+### Concept 4 — Building a Layer (A Group of Neurons)
+
+```python
+def neuron_output(weights: Vector, inputs: Vector) -> float:
+    return sigmoid(dot(weights, inputs))
+
+def feed_forward(neural_network, input_vector: Vector) -> List[Vector]:
+    outputs = []
+    for layer in neural_network:
+        input_with_bias = input_vector + [1]  # the "always-1" trick from Ch15!
+        output = [neuron_output(neuron, input_with_bias) for neuron in layer]
+        outputs.append(output)
+        input_vector = output
+    return outputs
+```
+
+- **Direct callback:** `input_vector + [1]` — this is the **exact same "add a constant 1 to fold in the bias/intercept" trick from Chapter 15's multiple regression.** Same elegant simplification, reused in a totally different-looking context.
+- **Now I understand how it works:** a neural network is just **layers of logistic regressions, where each layer's output becomes the next layer's input.** "Feed-forward" simply means: compute one layer, pass its output forward as the input to the next layer, repeat.
+
+---
+
+### Concept 5 — Solving XOR With a Hidden Layer
+
+- Grus shows: with just **one hidden layer of 2 neurons**, a network *can* solve XOR — each hidden neuron learns a different linear boundary, and the output neuron combines them into a non-linear decision region.
+- **Oh, that's the idea!** This is the "aha" moment of the whole chapter: **depth (stacking layers) is what gives neural networks their power** — not any single neuron being smarter, but the *composition* of simple linear-plus-squash units creating increasingly complex decision boundaries.
+
+---
+
+### Concept 6 — Backpropagation: Training a Multi-Layer Network
+
+- **Interesting problem:** for a single logistic regression (Ch16), you could compute the gradient directly. But now you have **layers** — how do you know how much each weight in the *hidden* layer contributed to the *final* output's error?
+- **Wait, why does that happen?** The hidden layer's weights affect the output only *indirectly* — through the neurons they feed into. You need a way to "distribute blame" for the final error backward through the network, layer by layer.
+- **Oh, THAT's the idea! — backpropagation is just the chain rule from calculus, applied systematically:**
+```python
+def sqerror_gradients(network, input_vector, target_vector):
+    hidden_outputs, outputs = feed_forward(network, input_vector)
+
+    output_deltas = [output * (1 - output) * (output - target)
+                      for output, target in zip(outputs, target_vector)]
+
+    output_grads = [[output_deltas[i] * hidden_output
+                      for hidden_output in hidden_outputs + [1]]
+                     for i, output_neuron in enumerate(network[-1])]
+
+    hidden_deltas = [hidden_output * (1 - hidden_output) *
+                      dot(output_deltas, [n[i] for n in network[-1]])
+                      for i, hidden_output in enumerate(hidden_outputs)]
+
+    hidden_grads = [[hidden_deltas[i] * input for input in input_vector + [1]]
+                     for i, hidden_neuron in enumerate(network[0])]
+
+    return [hidden_grads, output_grads]
+```
+- **Don't get lost in the exact lines — here's the concept that matters:** compute the error at the **output layer** first (easy — you know the true target there). Then work **backward**, using the chain rule to figure out "how much did each hidden neuron's output contribute to this final error?" This is literally why it's called **back**-propagation — errors flow backward through the network, layer by layer, the reverse direction of the forward pass.
+- **Direct callback:** `output * (1 - output)` is the **derivative of the sigmoid function** — a clean mathematical property of the exact function Chapter 16 chose, that makes this whole backward computation tractable.
+
+---
+
+### Concept 7 — Training the Network (Same Old Loop, Once Again)
+
+```python
+import tqdm
+for epoch in tqdm.trange(20000):
+    for input_vector, target_vector in zip(xs, ys):
+        gradients = sqerror_gradients(network, input_vector, target_vector)
+        network = [[gradient_step(neuron, grad, -learning_rate)
+                    for neuron, grad in zip(layer, layer_grad)]
+                   for layer, layer_grad in zip(network, gradients)]
+```
+
+- **Look at this — `gradient_step`, from Chapter 8, completely unchanged, one more time.** Even backpropagation — the "scary" algorithm behind neural networks — is ultimately just: **compute a (more complicated) gradient, then call the exact same `gradient_step` function you built in Chapter 8.**
+- **This is the single most satisfying "now I understand how it works" moment in the entire book:** the algorithm that powers modern deep learning is not fundamentally different from the simple `sum_of_squares` minimization example from Chapter 8. Everything since has just been **increasingly clever ways of computing the gradient** — the actual "walking downhill" mechanism never changed.
+
+---
+
+### Chapter 18 — Big Picture Takeaway
+
+```
+Perceptron = dot(weights, x) + bias, squashed = literally logistic regression (Ch16)
+        ↓
+Single neuron can't solve XOR (not linearly separable)
+        ↓
+Stack neurons into LAYERS → composition of simple functions creates complex boundaries
+        ↓
+Sigmoid (Ch16) chosen specifically because it's smooth/differentiable everywhere
+        ↓
+Backpropagation = chain rule, distributing "blame" for error backward through layers
+        ↓
+Training = gradient_step (Ch8), unchanged, applied to this more complex gradient
+```
+
+| Concept | Connects Back To |
+|---|---|
+| `neuron_output` | `dot()` (Ch4) + `sigmoid`/`logistic` (Ch16) |
+| Bias trick (`input + [1]`) | Multiple regression's intercept trick (Ch15) |
+| Why sigmoid, not step function | Need smooth gradients for gradient descent (Ch8) |
+| Backpropagation | Chain rule, distributing error backward |
+| Training loop | `gradient_step`, Ch8 — still unchanged |
+
+**One-sentence takeaway:** *A neural network is not a mysterious new invention — it is `dot()` and `sigmoid()` (both already yours since Chapter 4 and 16) stacked in layers, with backpropagation simply being a systematic way to compute the gradient for `gradient_step` (Ch8) across multiple layers instead of one.*
+
+---
+
+**Stopping point reached.**
+
+You've just crossed one of the most important conceptual thresholds in the book — neural networks demystified from first principles. Say **"Continue"** for **Chapter 19 — Deep Learning**, where we extend this into deeper networks, better activation functions, and modern training tricks — or say **"Practice"** for a checkpoint on Chapters 17–18 first, since this is a dense, high-value pair of chapters worth reinforcing before moving on.
+
+## 24. Chapter 19: Deep Learning — Teaching
+
+### Why This Chapter Is "More Layers, Better Engineering" Rather Than New Ideas
+
+- Chapter 18 gave you the *concept* of a neural network. Chapter 19 gives you the **engineering upgrades** that make networks with many layers ("deep" networks) actually trainable in practice — because naively stacking many sigmoid layers runs into real problems.
+- **Framing:** treat this chapter as "here's what breaks when you scale up Chapter 18, and here's how real practitioners fix it."
+
+---
+
+### Concept 1 — A Cleaner Abstraction: The `Tensor` and the `Layer`
+
+```python
+Tensor = list  # a generic stand-in for vectors, matrices, or higher-dim arrays
+
+class Layer:
+    def forward(self, input):
+        raise NotImplementedError
+
+    def backward(self, gradient):
+        raise NotImplementedError
+```
+
+- **Interesting problem:** Chapter 18's neural network code was one big tangle of hardcoded feed-forward and backprop logic for a *specific* 2-layer network. What if you want 5 layers? 10?
+- **Wait, why does that happen?** Hardcoded logic doesn't scale or compose. You need each layer to be a **self-contained, swappable unit** — with a standard interface: "given an input, produce an output" (`forward`) and "given a gradient from the layer after me, produce a gradient for the layer before me" (`backward`).
+- **Oh, that's the idea!** This is a genuine **software engineering lesson disguised as ML** — the `Layer` abstraction is essentially the same idea as functions being composable in Chapter 2 (`apply_twice(f, x)`), just architected for building arbitrarily deep stacks. **This is literally how real frameworks like PyTorch and TensorFlow are structured internally** — you're learning the actual design pattern, not a toy simplification.
+
+---
+
+### Concept 2 — The Sigmoid Layer's Hidden Problem: Vanishing Gradients
+
+- **Interesting problem:** Chapter 18 worked fine with 2 layers. What happens when you stack, say, 20 sigmoid layers?
+- **Wait, why does that happen?** Remember from Ch18: the sigmoid's derivative is `output * (1 - output)`, which has a **maximum value of only 0.25** (at output = 0.5), and gets close to **0** near the extremes (0 or 1). During backpropagation, gradients get **multiplied together, layer by layer, backward through the network** (chain rule). Multiplying many numbers ≤ 0.25 together makes the gradient **shrink exponentially** the further back you go.
+- **Oh, THAT's the idea!** By the time the error signal reaches the early layers, the gradient is practically **zero** — those layers essentially stop learning. This is the famous **"vanishing gradient problem"** — a real, historically important obstacle that limited neural networks for years before better solutions were found.
+- **This is a direct, concrete consequence of a design choice made all the way back in Chapter 16** — choosing sigmoid because it was smooth and differentiable was correct for *shallow* networks, but that same smoothness becomes a liability once you stack it many layers deep.
+
+---
+
+### Concept 3 — The Fix: ReLU (Rectified Linear Unit)
+
+```python
+def relu(x: float) -> float:
+    return max(0, x)
+```
+
+- **Interesting problem:** what if you used a much simpler activation function — one that's either "off" (0) or "pass-through, unchanged" for positive inputs?
+- **Wait, why does that happen — how does this fix vanishing gradients?** The derivative of ReLU is either **exactly 0** (for negative inputs) or **exactly 1** (for positive inputs) — no shrinking multiplication through many layers, because multiplying by 1 repeatedly doesn't shrink anything.
+- **Oh, that's the idea!** This is *the* key innovation that made genuinely deep networks (many layers) practical, and it's why ReLU (and its variants) is the default activation function in almost all modern deep learning — not sigmoid, despite sigmoid being the "textbook" activation from Chapter 18.
+- **Tradeoff worth knowing:** ReLU has its own failure mode ("dying ReLU," where a neuron gets stuck outputting 0 forever if its weights drift negative) — no fix is completely free, another instance of the book's recurring theme that **every design choice trades one problem for another.**
+
+---
+
+### Concept 4 — Softmax: Multi-Class Output (Beyond Yes/No)
+
+- **Interesting problem:** logistic regression (Ch16) and the Chapter 18 network output a single probability (binary yes/no). What if you have **more than 2** categories (e.g., classifying digits 0–9)?
+- **Wait, why does that happen — why can't you just use sigmoid for each of the 10 output neurons independently?** Independent sigmoids don't guarantee the 10 output probabilities **sum to 1** — you could get nonsensical results like all 10 classes having 80% probability.
+- **Oh, that's the idea! — softmax fixes this:**
+```python
+def softmax(tensor):
+    exps = [math.exp(x) for x in tensor]
+    total = sum(exps)
+    return [e / total for e in exps]
+```
+- **Practical meaning:** exponentiate every output (making everything positive), then normalize by the total — guaranteeing all outputs are positive **and** sum to exactly 1, so they form a genuine probability distribution across multiple classes.
+- **Direct callback:** this is conceptually the *same normalization idea* as Naive Bayes' final step in Chapter 13 (`prob_if_spam / (prob_if_spam + prob_if_ham)`) — turning raw scores into a proper probability distribution by dividing by the total.
+
+---
+
+### Concept 5 — Loss Functions for Deep Networks
+
+- Chapter 18 used squared error. For classification, Grus introduces **cross-entropy loss** (built on the same negative log-likelihood idea from Chapter 16's logistic regression), which pairs naturally with softmax and produces better gradient behavior for classification tasks.
+- **Direct callback:** same "why not squared error" reasoning as Chapter 16 — squared error's gradients get weak in saturated regions; log-based loss keeps gradients informative even when predictions are confidently wrong.
+
+---
+
+### Concept 6 — Dropout: A Regularization Trick Specific to Neural Networks
+
+```python
+class Dropout(Layer):
+    def __init__(self, p: float):
+        self.p = p
+
+    def forward(self, input):
+        if self.training:
+            self.mask = [0 if random.random() < self.p else 1 for _ in input]
+            return [i * m for i, m in zip(input, self.mask)]
+        else:
+            return [i * (1 - self.p) for i in input]
+```
+
+- **Interesting problem:** deep networks have *huge* numbers of parameters — even more prone to overfitting (Ch11) than the regression models from Ch14–16.
+- **Wait, why does that happen — how does randomly "turning off" neurons during training help?** If the network can't rely on any specific neuron always being present, it's forced to learn **redundant, distributed representations** rather than over-relying on a few neurons that happen to memorize training quirks.
+- **Oh, that's the idea!** This is regularization (Ch15's Ridge/Lasso concept) reimagined for neural networks — instead of penalizing weight magnitude directly, you inject *noise* into training itself, forcing robustness. Same underlying goal (fight overfitting, Ch11), completely different mechanism.
+
+---
+
+### Concept 7 — Putting It Together: A Deep Network as a Stack of Layers
+
+```python
+model = [
+    Linear(input_dim=2, output_dim=2),
+    Sigmoid(),
+    Linear(input_dim=2, output_dim=1),
+    Sigmoid()
+]
+
+for layer in model:
+    input = layer.forward(input)
+```
+
+- **Now I understand how it works:** "deep learning" isn't a different algorithm from Chapter 18's neural network — it's the **same feed-forward/backprop idea**, engineered into composable `Layer` objects so you can stack **arbitrarily many** of them, with better-behaved activation functions (ReLU) and additional regularization tools (Dropout) to keep training stable and generalizable at scale.
+
+---
+
+### Chapter 19 — Big Picture Takeaway
+
+```
+Layer abstraction → makes networks composable/scalable (software engineering payoff)
+        ↓
+Sigmoid's small derivative → vanishing gradients in deep stacks
+        ↓
+ReLU → derivative of exactly 0 or 1, fixes vanishing gradients
+        ↓
+Softmax → generalizes "squash into probability" to multi-class problems
+        ↓
+Cross-entropy loss → same log-likelihood logic as logistic regression (Ch16), for multi-class
+        ↓
+Dropout → a NEW way to fight overfitting (Ch11), specific to neural networks
+```
+
+| Concept | Connects Back To |
+|---|---|
+| `Layer` abstraction | Composable functions (Ch2) |
+| Vanishing gradients | Sigmoid's derivative properties (Ch16/18) |
+| Softmax | Naive Bayes' final normalization step (Ch13) |
+| Dropout | Regularization / overfitting (Ch11, Ch15) |
+| Training loop | Still `gradient_step`-style updates, Ch8 |
+
+**One-sentence takeaway:** *Deep learning is not a new algorithm — it's Chapter 18's neural network, re-engineered with better-behaved building blocks (ReLU instead of sigmoid, Dropout instead of Ridge) specifically so the exact same gradient descent from Chapter 8 keeps working reliably even when you stack dozens of layers.*
+
+---
+
+### Part 2 Complete — You've Now Built Every Major "Learning" Algorithm From Scratch
+
+```
+k-NN (distance+voting) → Naive Bayes (probability) → Linear/Multiple/Logistic Regression 
+    (dot + gradient descent) → Decision Trees (entropy) → Neural Networks & Deep Learning 
+        (dot + sigmoid/ReLU + backprop, ALL still trained by Ch8's gradient descent)
+```
+
+---
+
+**Stopping point reached.**
+
+Say **"Continue"** for **Chapter 20 — Clustering**, where we shift from *supervised* learning (you had labels the whole time) to **unsupervised** learning — finding structure in data with no labels at all, using the `distance()` and `vector_mean()` functions from Chapter 4 one more time.
+
+## 25. Chapter 20: Clustering — Teaching
+
+### Why This Chapter Is a Genuine Category Shift
+
+- Every algorithm so far — k-NN, Naive Bayes, all regression variants, decision trees, neural networks — was **supervised**: you had labeled examples (`y` values) to learn from.
+- Clustering is **unsupervised**: you're just given raw data points with **no labels at all**, and the goal is to discover structure — groups of similar points — on your own.
+- **Framing:** this is a smaller conceptual jump than it sounds, because the actual mechanics reuse two functions you've had since Chapter 4: `distance()` and `vector_mean()`.
+
+---
+
+### Concept 1 — The Core Problem: Grouping Without Labels
+
+- **Interesting problem:** you have a pile of points in space (e.g., user locations, or feature vectors) with no category information whatsoever. How do you find natural groupings?
+- **Wait, why does that happen — why would this even be possible without labels?** Because "similar" points tend to be **close together** in feature space — the same underlying assumption k-NN relied on (Ch12), just now used to *discover* groups instead of *predict* an existing label.
+
+---
+
+### Concept 2 — The k-Means Algorithm
+
+```python
+class KMeans:
+    def __init__(self, k: int):
+        self.k = k
+        self.means = None
+
+    def classify(self, input: Vector) -> int:
+        return min(range(self.k), key=lambda i: squared_distance(input, self.means[i]))
+```
+
+- **Direct callback:** `squared_distance` — straight from **Chapter 4.** Assigning a point to the "nearest" cluster is the exact same distance-comparison logic as k-NN's neighbor search (Ch12), just comparing to cluster centers instead of individual labeled points.
+
+**The full algorithm loop:**
+```python
+def train(self, inputs: List[Vector]) -> None:
+    assignments = [random.randrange(self.k) for _ in inputs]
+
+    with tqdm.tqdm(itertools.count()) as t:
+        for _ in t:
+            self.means = [vector_mean([input for input, a in zip(inputs, assignments) if a == i])
+                          for i in range(self.k)]
+            new_assignments = [self.classify(input) for input in inputs]
+
+            num_changed = sum(a != b for a, b in zip(assignments, new_assignments))
+            if num_changed == 0:
+                return
+            assignments = new_assignments
+```
+
+- **Two-step loop, repeated until stable:**
+  1. **Update step:** given the current group assignments, recompute each cluster's center as the **mean** of all points currently assigned to it — this is `vector_mean()` **from Chapter 4**, used exactly as it was for Chapter 20's very first example use-case (averaging vectors).
+  2. **Assignment step:** given the current cluster centers, reassign every point to its **nearest** center — this is `distance()` **from Chapter 4** again.
+- **Wait, why does that happen — why alternate these two steps instead of solving directly?** There's no simple formula for "the best possible clustering" — it's a chicken-and-egg problem (you need assignments to compute means, and means to compute assignments). Alternating between the two steps, each one improving given the other, **gradually converges** to a stable, locally good clustering.
+- **Oh, that's the idea!** This iterative "improve one thing, then the other, repeat until nothing changes" pattern is conceptually similar in *spirit* to gradient descent (Ch8) — both are iterative optimization — but structurally different: k-means doesn't use gradients or derivatives at all, just direct recomputation of means and reassignments.
+
+---
+
+### Concept 3 — Choosing k (Yet Another Bias-Variance-Style Tradeoff)
+
+- **Interesting problem:** how many clusters should you use? k=2? k=10?
+- **Wait, why does that happen?** With `k = number of data points`, every point is its own cluster — zero within-cluster error, but a completely useless, "overfit" clustering (this is `variance` gone wild — no generalizable structure at all). With `k=1`, everything is one giant cluster — maximally simple, but captures no real structure (`bias` gone wild).
+- **Oh, THAT's the idea!** This is, once again, **the exact bias-variance tradeoff from Chapter 11**, showing up in an unsupervised setting where you don't even have labels or a test set to measure "correctness" against.
+- **The fix Grus shows:** plot **total squared error** (sum of each point's squared distance to its assigned cluster center) against different values of `k`, and look for an "elbow" — the point where adding more clusters stops giving meaningful error reduction. This is a direct visual echo of **Chapter 3's line charts and Chapter 11's total-error-vs-complexity curve.**
+
+---
+
+### Concept 4 — A Practical Application: Image Color Compression
+
+- **Interesting problem Grus poses:** an image might have millions of distinct colors (each pixel is an RGB vector). Can you approximate the image using only, say, 5 colors?
+- **Wait, why does that happen — how does k-means help here?** Treat each pixel's RGB value as a 3-dimensional vector (**Chapter 4's vector concept, again**), run k-means with `k=5`, and replace every pixel with its nearest cluster's center color.
+- **Oh, that's the idea!** This is a genuinely satisfying, visual demonstration that clustering isn't just an abstract statistics exercise — it directly produces a real, visible result (an image redrawn using only 5 colors) using nothing but `distance()` and `vector_mean()`, tools you've had since Chapter 4.
+
+---
+
+### Concept 5 — The Limitations of k-Means (Setting Up a More Sophisticated Alternative)
+
+- **Interesting problem:** k-means assumes clusters are roughly round/spherical and similarly sized. What happens with oddly-shaped or nested clusters (e.g., one cluster shaped like a ring around another)?
+- **Wait, why does that happen?** Because k-means only measures distance to a single center point, it **cannot** correctly separate clusters that aren't compact, roughly circular blobs — a ring-shaped cluster around a central blob will get sliced up incorrectly, since points on opposite sides of the ring are far from each other even though they belong to the same true cluster.
+
+---
+
+### Concept 6 — Bottom-Up Hierarchical Clustering (The Alternative Approach)
+
+- Instead of pre-specifying `k`, hierarchical clustering starts with **every point as its own cluster**, then repeatedly **merges the two closest clusters** together, one pair at a time, building up a tree of merges (a "dendrogram").
+- **Wait, why does that happen — why is this useful?** You don't need to decide `k` in advance — you can look at the resulting merge tree and **cut it at any level** to get however many clusters you want, after the fact.
+- **Oh, that's the idea!** This reuses `distance()` yet again, but now needs a rule for **"distance between two clusters"** (not just two points) — Grus shows options like "minimum distance between any pair of points in the two clusters" — a genuinely new small idea, but built entirely from the same distance primitive.
+
+---
+
+### Chapter 20 — Big Picture Takeaway
+
+```
+No labels available → need to discover structure directly from the data
+        ↓
+k-means: alternate between
+    (1) recompute cluster centers = vector_mean() [Ch4]
+    (2) reassign points to nearest center = distance() [Ch4]
+        ↓
+Choosing k = bias-variance tradeoff [Ch11], again — visualized via elbow plot [Ch3]
+        ↓
+Real application: image color compression, using pure Ch4 vector tools
+        ↓
+Limitation: assumes round/blob-shaped clusters
+        ↓
+Hierarchical clustering: alternative that builds a merge-tree, no k needed upfront
+```
+
+| Concept | Connects Back To |
+|---|---|
+| Cluster assignment | `distance()`/`squared_distance()`, Ch4 |
+| Cluster center update | `vector_mean()`, Ch4 |
+| Choosing k | Bias-Variance Tradeoff, Ch11 |
+| Elbow plot | Line charts, Ch3 |
+
+**One-sentence takeaway:** *k-means proves that even without any labels at all, the same two humble Chapter 4 functions — `distance()` and `vector_mean()` — are enough to discover meaningful structure in data, just applied iteratively instead of in one shot.*
+
+---
+
+**Stopping point reached.**
+
+Say **"Continue"** for **Chapter 21 — Natural Language Processing**, where `dot()`, word-counting (`Counter`/`defaultdict` from Ch2), and Naive Bayes-style probability (Ch13) all combine to work with **text** as data — including n-grams, topic modeling, and word vectors.
+
+## 26. Chapter 21: Natural Language Processing — Teaching
+
+### Why This Chapter Feels Like a "Greatest Hits" Reunion
+
+- NLP isn't a new *algorithmic* family — it's **applying everything you already know** (probability, `dot()`, gradient descent, even neural networks) to a new *kind* of data: text.
+- **Framing:** the hard part of NLP was never "new math" — it's figuring out how to turn words into numbers so your existing tools can operate on them.
+
+---
+
+### Concept 1 — Word Clouds (And Why They're Actually a Bad Idea)
+
+- **Interesting problem:** you want to visualize the most common words in a set of documents. Word clouds (word size ∝ frequency) seem like the obvious choice.
+- **Wait, why does that happen — what's wrong with word clouds?** Grus argues they're visually appealing but **analytically weak** — human eyes are bad at precisely comparing the *area* of irregularly shaped text, so word clouds look impressive but convey less precise information than a simple bar chart or scatterplot.
+- **Oh, that's the idea!** This is a **direct callback to Chapter 3's core lesson**: choose visualizations based on what they actually communicate, not what looks "cool." A scatterplot of word frequency vs. some other metric (e.g., how often each word appears in job postings vs. resumes) is more genuinely informative than a word cloud.
+
+---
+
+### Concept 2 — n-Gram Language Models (Generating Text)
+
+- **Interesting problem:** how can you generate new, plausible-sounding sentences from a corpus of existing text, without deeply understanding grammar?
+- **The bigram approach:** for every word in your training text, record **which words tend to follow it.**
+```python
+transitions = defaultdict(list)
+for prev, current in zip(document, document[1:]):
+    transitions[prev].append(current)
+```
+- **Direct callback:** `defaultdict(list)` — **Chapter 2's tool**, used in the *exact same pattern* as Chapter 1's friendship graph (`{user: [connections]}`). Here it's `{word: [words that followed it]}` — structurally identical idea, totally different domain.
+- **To generate text:** start with a word, then randomly pick one of its recorded "next words," repeat.
+- **Wait, why does that happen — why does this produce semi-coherent text?** Because you're sampling from the **real, empirical probability distribution** of what word follows another in actual language — this is a simple, concrete **Markov Chain** (each next word depends only on the current word, not the whole history).
+- **Oh, that's the idea!** This is conceptually a tiny, transparent ancestor of how modern large language models work at a basic level — predicting the next token based on context — just with an extremely short "memory" (1 word) and pure frequency lookup instead of a trained neural network.
+
+---
+
+### Concept 3 — Extending to Trigrams (More Context, Better Coherence)
+
+- **Interesting problem:** bigram-generated text is often grammatically broken, because knowing just *one* previous word isn't much context.
+- **Wait, why does that happen?** Using **two** previous words as the "key" instead of one gives the model much more context to predict a sensible next word — text quality improves noticeably.
+- **Oh, that's the idea!** This directly illustrates a fundamental NLP tradeoff: **more context = better predictions, but also = more distinct keys, so you need proportionally more training data** to have seen each specific 2-word combination enough times to be useful. This is the exact **curse of dimensionality** idea from Chapter 10, reappearing in a text context — more "features" (context words) means sparser data per combination.
+
+---
+
+### Concept 4 — Grammar-Based Generation (A Brief Structural Alternative)
+
+- Grus briefly shows generating sentences using formal grammar rules (like `_S -> _NP _VP`) instead of statistics — a rule-based, not statistical, approach.
+- **Contrast point:** this represents the "old school" (pre-statistical) approach to NLP — useful to know it exists, but statistical/learned approaches (like the n-gram models above, and everything that follows) dominate modern practice.
+
+---
+
+### Concept 5 — Naive Bayes Revisited: Topic Extraction
+
+- Callback exercise: apply **Chapter 13's exact Naive Bayes machinery** to a new problem — not spam/ham, but classifying documents by topic.
+- **Now I understand how it works:** the "spam filter" was never really about spam specifically — it was a general **text classification engine.** Swap the two categories and the labeled training data, and the exact same code solves a completely different real-world problem.
+
+---
+
+### Concept 6 — Word Vectors (The Big Conceptual Leap of This Chapter)
+
+- **Interesting problem:** so far, words have been treated as pure symbols — "cat" and "dog" are just as different to your code as "cat" and "spaceship." But intuitively, "cat" and "dog" are much more *similar* in meaning. How do you teach a computer that?
+- **Wait, why does that happen — how could you possibly encode "meaning" numerically?** The key insight (distributional semantics): **words that appear in similar contexts tend to have similar meanings.** So if you train a model to predict a word from its surrounding context (or vice versa), the model is forced to develop internal number representations (vectors!) that capture meaning-related similarity, purely as a side effect of getting good at the prediction task.
+- **Oh, THAT's the idea!** This is genuinely one of the most important ideas in modern NLP. Grus builds a **simplified word2vec-style model**:
+```python
+# skip-gram idea: given a word, predict its surrounding context words
+# training this with gradient descent forces each word into a Vector (Ch4!)
+# such that words with similar contexts end up with similar vectors
+```
+- **Direct callback — and this is the payoff of the entire book's philosophy:** each word becomes literally a `Vector` (Chapter 4's exact type alias!), trained via **gradient descent** (Chapter 8), often implemented as a tiny **neural network** (Chapter 18) with one hidden layer. **Every single tool from the entire book converges here** — vectors, distance, dot products, gradient descent, and neural network layers — all pointed at the problem of representing *meaning* numerically.
+- **Where else can I use this?** Once words are vectors, you can use `distance()` (Ch4!) to find "similar" words, use `dot()` for similarity scoring, average word vectors to represent whole sentences, and feed these vectors into *any* other algorithm from the book (k-NN, logistic regression, neural networks) to build sentiment classifiers, search engines, recommendation systems, and more.
+
+---
+
+### Concept 7 — Recurrent Neural Networks (Brief Mention, Beyond Feed-Forward)
+
+- Grus notes: feed-forward networks (Ch18/19) process one fixed-size input at a time — but sentences have **variable length** and **order matters** deeply.
+- Briefly introduces **RNNs** — networks with a "memory" that carries information from one word to the next as they process a sequence, rather than treating each input independently.
+- Positioned as "beyond this book's scope to build fully from scratch," but conceptually: it's an evolution of the feed-forward network from Ch18, adding a loop so the network's own previous output feeds back in as part of the next input — a natural extension once you understand the base architecture.
+
+---
+
+### Chapter 21 — Big Picture Takeaway
+
+```
+Word clouds → analytically weak (callback: choose visuals wisely, Ch3)
+        ↓
+n-gram models → defaultdict(list) [Ch2] tracking word transitions → simple text generation
+        ↓
+Naive Bayes [Ch13] → reused directly for topic classification, not just spam
+        ↓
+Word vectors → the BIG idea: words become Vectors [Ch4], trained via gradient descent [Ch8],
+               often through a small neural network [Ch18] — meaning encoded as geometry
+        ↓
+distance() [Ch4] on word vectors → measures semantic similarity
+        ↓
+RNNs → natural extension of feed-forward networks [Ch18] for sequential/ordered data
+```
+
+| Concept | Connects Back To |
+|---|---|
+| `defaultdict(list)` for transitions | Chapter 1's friendship graph, Chapter 2's tools |
+| Naive Bayes topic classification | Chapter 13, applied to a new domain |
+| Word vectors | Vector (Ch4), gradient descent (Ch8), neural nets (Ch18) — ALL of them, at once |
+| Word similarity | `distance()`, `dot()` — Chapter 4 |
+
+**One-sentence takeaway:** *NLP isn't a separate field of tricks — it's the moment every tool from the entire book (vectors, distance, dot products, gradient descent, neural networks, Naive Bayes) gets aimed simultaneously at the problem of representing human language numerically.*
+
+---
+
+**Stopping point reached.**
+
+You've now completed nearly the entire technical core of the book. Say **"Continue"** for **Chapter 22 — Network Analysis** (a direct return to Chapter 1's friendship graph, now with real graph algorithms), or say **"Practice"** for a checkpoint covering Chapters 17–21 before finishing the book's final applied chapters.
+
+## 27. Chapter 22: Network Analysis — Teaching
+
+### Why This Chapter Is a Direct Return to Chapter 1
+
+- Remember the very first problem in this book — the "key connectors" friendship graph? Chapter 22 comes back to that exact structure and asks: **what other real questions can we answer using graph structure?**
+- **Framing:** this chapter feels like a satisfying "full circle" moment — the simplest possible example from Chapter 1 gets revisited with genuinely more powerful tools.
+
+---
+
+### Concept 1 — Betweenness Centrality (A Better "Importance" Metric)
+
+- **Interesting problem:** Chapter 1 measured "importance" by simple friend count (degree centrality). Is that really the best measure of who's important in a network?
+- **Wait, why does that happen — what's wrong with simple friend count?** Imagine someone with only 2 friends, but those 2 friends are in **completely different, otherwise-unconnected parts of the network.** That person is a critical "bridge" — remove them, and the network splits apart — yet their raw friend count is low. Degree centrality completely misses this.
+- **Oh, that's the idea! — betweenness centrality fixes this:** for every pair of *other* people in the network, find the **shortest path** between them, and count **how often a given person lies on that shortest path.** Someone who frequently sits "between" others (even with few direct friends) scores highly.
+- **This directly upgrades Chapter 1's original naive metric** — you're not throwing away the friendship graph idea, you're asking a smarter question about the same data structure.
+
+---
+
+### Concept 2 — Shortest Paths (Breadth-First Search)
+
+```python
+from collections import deque
+
+def shortest_paths_from(from_user, users):
+    shortest_paths_to = {from_user["id"]: [[]]}
+    frontier = deque((from_user, friend) for friend in from_user["friends"])
+
+    while frontier:
+        prev_user, user = frontier.popleft()
+        user_id = user["id"]
+        paths_to_prev = shortest_paths_to[prev_user["id"]]
+        new_paths_to_user = [path + [user_id] for path in paths_to_prev]
+
+        old_paths_to_user = shortest_paths_to.get(user_id, [])
+        if old_paths_to_user:
+            min_path_length = len(old_paths_to_user[0])
+        else:
+            min_path_length = float('inf')
+
+        new_paths_to_user = [path for path in new_paths_to_user
+                              if len(path) <= min_path_length
+                              and path not in old_paths_to_user]
+
+        shortest_paths_to[user_id] = old_paths_to_user + new_paths_to_user
+
+        frontier.extend((user, friend) for friend in user["friends"]
+                         if friend["id"] not in shortest_paths_to)
+
+    return shortest_paths_to
+```
+
+- **Direct callback:** `deque` from Python's `collections` — same module family as `Counter` and `defaultdict` from Chapter 2 — used here for its efficient "pop from front" behavior, essential for BFS.
+- **This is a core computer science algorithm (Breadth-First Search)**, appearing in a data science book because **graph traversal is genuinely a data science tool**, not just a "pure CS" topic. This is a nice reminder that DSA and data science aren't separate worlds — they constantly overlap.
+- **Wait, why BFS specifically, not just any path-finding?** BFS naturally explores the graph level-by-level (nearest neighbors first, then their neighbors, etc.), which guarantees the **first** time you reach a node, you've found a **shortest** path to it — exactly the property betweenness centrality needs.
+
+---
+
+### Concept 3 — Eigenvector Centrality (An Even Smarter Notion of "Importance")
+
+- **Interesting problem:** betweenness centrality is expensive to compute (requires finding shortest paths between *every* pair of people). Is there a cheaper, still-meaningful alternative?
+- **Wait, why does that happen — what's the underlying idea?** Eigenvector centrality says: **a person is important if they're connected to other important people** — a recursive, self-referential definition (similar in spirit to how Google's original PageRank ranked web pages: important pages are linked to by other important pages).
+- **Oh, that's the idea! — computing it uses matrix multiplication:**
+```python
+def matrix_times_matrix(m1: Matrix, m2: Matrix) -> Matrix:
+    ...
+```
+- **Direct callback:** this is **Chapter 4's `Matrix` type and matrix operations**, now put to real use — the friendship adjacency matrix concept introduced back in Chapter 4 (`friend_matrix[i][j] == 1` if friends) is **exactly** what gets repeatedly multiplied here to compute eigenvector centrality.
+- **The technique:** start with a random importance-guess vector, repeatedly multiply it by the adjacency matrix, and (after appropriate rescaling) it **converges** toward the true eigenvector centrality scores — an elegant, iterative numerical method, conceptually similar in spirit to how gradient descent (Ch8) or k-means (Ch20) iteratively converge to good answers, just via a different mechanism (matrix multiplication rather than gradients or distance).
+
+---
+
+### Concept 4 — Directed Graphs and PageRank
+
+- Friendships were **undirected** (mutual) — but many real networks are **directed** (e.g., Twitter/X "follows," web links, citations — A can follow B without B following A).
+- **Interesting problem:** how do you measure importance when relationships are one-directional?
+- **Wait, why does that happen — why not just reuse eigenvector centrality directly?** Directed graphs need the algorithm to account for direction — being "followed by" many important accounts should count differently than "following" many people.
+- **Oh, that's the idea!** **PageRank** is essentially eigenvector centrality **adapted for directed graphs** — it's literally the algorithm that made Google's original search ranking work, and Grus shows you're already 90% of the way there just by understanding the undirected case first.
+
+---
+
+### Chapter 22 — Big Picture Takeaway
+
+```
+Chapter 1's naive friend-count metric → revisited and shown to be limited
+        ↓
+Betweenness centrality → who sits "between" others on shortest paths
+        ↓
+Shortest paths → Breadth-First Search (classic CS/DSA algorithm), using deque [Ch2 family]
+        ↓
+Eigenvector centrality → "important if connected to important people" (self-referential)
+        ↓
+Computed via repeated MATRIX multiplication → Chapter 4's Matrix type, finally put to real use
+        ↓
+PageRank → eigenvector centrality, adapted for directed graphs (Google's original algorithm)
+```
+
+| Concept | Connects Back To |
+|---|---|
+| Friendship graph structure | Chapter 1's original problem |
+| BFS / shortest paths | Core DSA, `deque` (Ch2 family) |
+| Adjacency matrix | Chapter 4's `Matrix` type |
+| Iterative convergence | Same *spirit* as gradient descent (Ch8), k-means (Ch20) |
+
+**One-sentence takeaway:** *Network analysis proves that Chapter 1's "toy" friendship problem was never a toy — it was a real graph, and this chapter simply gives you the proper algorithms (BFS, eigenvector centrality, PageRank) to answer the same kind of question with genuine rigor.*
+
+---
+
+**Stopping point reached.**
+
+Say **"Continue"** for **Chapter 23 — Recommender Systems**, where we build actual "people you may know" / "products you may like" engines — directly extending Chapter 1's second problem (friend recommendations) into real, general-purpose techniques.
+
+## 28. Chapter 23: Recommender Systems — Teaching
+
+### Why This Chapter Directly Completes Chapter 1's Second Problem
+
+- Recall Chapter 1's **second** problem: "Data Scientists You May Know" — a naive friends-of-friends recommender. This chapter formalizes that idea into real, general-purpose recommendation techniques used across every major platform (Netflix, Amazon, Spotify).
+- **Framing:** recommender systems aren't a new algorithmic family — they're a **direct application** of `dot()`, vectors, and distance you've had since Chapter 4, aimed at a specific business problem.
+
+---
+
+### Concept 1 — The Simplest Baseline: Recommend What's Popular
+
+```python
+popular_interests = Counter(interest for user_interests in users_interests
+                             for interest in user_interests).most_common()
+```
+
+- **Direct callback:** `Counter` — Chapter 2's tool, reused again exactly as promised.
+- **Interesting problem:** is "just recommend the most popular thing to everyone" actually a bad baseline?
+- **Wait, why does that happen?** Surprisingly, it's often a **strong baseline** — popular items are popular for a reason, and it works reasonably well for brand-new users you know nothing about (this specific scenario has a name: the **cold start problem**, which recurs throughout this chapter).
+- **Oh, that's the idea!** Never underestimate a dumb baseline — you always compare fancier techniques against something like this to prove they're actually adding value, not just adding complexity.
+
+---
+
+### Concept 2 — User-Based Collaborative Filtering
+
+- **Core idea:** recommend to User A the things that **users similar to User A** liked, but User A hasn't tried yet.
+- **Interesting problem:** how do you measure "similar" between two users?
+- **Wait, why does that happen — how do we turn "similarity" into math?** Represent each user's interests as a **vector** (1 if they like an interest, 0 if not) — this is Chapter 4's `Vector` concept, applied to preferences instead of numeric measurements.
+```python
+def cosine_similarity(v1: Vector, v2: Vector) -> float:
+    return dot(v1, v2) / math.sqrt(dot(v1, v1) * dot(v2, v2))
+```
+- **Direct callback — this is huge:** `dot()`, straight from **Chapter 4**, one more time. **Cosine similarity** measures the *angle* between two vectors rather than raw distance — two users pointing in a very similar "direction" in interest-space are considered similar, **regardless of how many total interests they have** (unlike raw distance, which would unfairly penalize/favor users just for having more interests overall).
+- **Wait, why cosine instead of plain `distance()` from Chapter 4?** If one user has 50 interests and another has 5, raw Euclidean distance would make them seem very different just due to *quantity*, even if their *tastes* strongly overlap proportionally. Cosine similarity normalizes for this by dividing out each vector's own magnitude — **the exact same normalization instinct as Chapter 10's rescaling**, just for a different reason (direction vs. magnitude, rather than differing units).
+- **To recommend:** find users with high cosine similarity to User A, then suggest items they liked that A hasn't tried — **essentially a "soft," probability-weighted version of Chapter 1's naive friends-of-friends idea.**
+
+---
+
+### Concept 3 — The Problem With User-Based Filtering at Scale
+
+- **Interesting problem:** if you have millions of users, computing similarity between User A and *every other user* is extremely expensive, and gets slower as your user base grows — the opposite of what you want for a growing product.
+- **Wait, why does that happen?** The number of user-to-user comparisons grows roughly with the *square* of the number of users — this doesn't scale to real platforms with millions of users.
+
+---
+
+### Concept 4 — Item-Based Collaborative Filtering (The Practical Fix)
+
+- **The clever flip:** instead of comparing **users** to each other, compare **items** to each other — "users who liked X also liked Y."
+- **Wait, why does that happen — why is this actually better?** In most real platforms, the **number of items is far more stable** than the number of users (a store's product catalog grows much more slowly than its user base) — so item-item similarity, once computed, stays useful for much longer and needs recomputing far less often.
+- **Oh, that's the idea!** This exact insight — item-based over user-based — is **why real-world recommender systems (Amazon's famous "customers who bought this also bought" feature) use item-based collaborative filtering** far more than user-based. You've just learned a genuinely important, real industry design decision, not just a toy technique.
+- **The math is identical**, just transposed: build an item-vector (which users liked this item), and reuse the **exact same `cosine_similarity` function** from Concept 2 — no new formula needed, just a different axis of the same data matrix (**Chapter 4's Matrix concept**, rows and columns swapped).
+
+---
+
+### Concept 5 — Matrix Factorization (A More Powerful, Modern Approach)
+
+- **Interesting problem:** collaborative filtering (user- or item-based) only works well when there's substantial overlap in what different users have rated — what about users/items with very few interactions (the cold start problem again)?
+- **Wait, why does that happen — what's a smarter approach?** **Matrix factorization** assumes that both users and items can be represented as vectors in some smaller, "latent" (hidden) feature space — e.g., unnamed dimensions that might implicitly capture things like "how much action vs. romance," even though no one explicitly labeled movies that way.
+- **Oh, THAT's the idea!** You **learn** these latent vectors directly from the ratings data — a user's predicted rating for an item becomes `dot(user_vector, item_vector)` — **yes, `dot()` again, Chapter 4, one more time** — and you train both sets of vectors simultaneously using **gradient descent (Chapter 8!)** to minimize the difference between predicted and actual ratings.
+```python
+predicted = dot(user_vector, item_vector)
+error = predicted - actual_rating
+# gradient descent nudges both user_vector and item_vector to reduce error
+```
+- **This is a genuinely satisfying full-circle moment:** the most sophisticated technique in this entire chapter is, once again, **just `dot()` plus gradient descent from Chapter 8** — the same training pattern you've now seen power linear regression, logistic regression, neural networks, and word vectors (Ch21). Recommender systems aren't a separate discipline — they're the same core machinery, aimed at "predict a rating" instead of "predict a label."
+
+---
+
+### Chapter 23 — Big Picture Takeaway
+
+```
+Chapter 1's naive "friends of friends" recommender → the seed of this whole chapter
+        ↓
+Popularity baseline → simple, surprisingly strong, solves cold-start
+        ↓
+User-based collaborative filtering → cosine_similarity (built on dot(), Ch4)
+        ↓
+PROBLEM: doesn't scale to millions of users
+        ↓
+Item-based collaborative filtering → same math, flipped axis (fixes scaling)
+        ↓
+Matrix factorization → learn latent user/item vectors via dot() + gradient descent [Ch8]
+```
+
+| Concept | Connects Back To |
+|---|---|
+| `Counter` popularity baseline | Chapter 2 |
+| `cosine_similarity` | `dot()`, Chapter 4 |
+| Normalizing for vector magnitude | Rescaling instinct, Chapter 10 |
+| Matrix factorization training | `dot()` + gradient descent, Chapter 8 |
+| Item vs. user similarity | Chapter 4's Matrix, rows vs. columns |
+
+**One-sentence takeaway:** *Recommender systems are Chapter 1's simple "friends of friends" idea, matured through Chapter 4's `dot()` and Chapter 8's gradient descent into the exact same machinery that powers Amazon, Netflix, and Spotify's real recommendation engines.*
+
+---
+
+**Stopping point reached.**
+
+Say **"Continue"** for **Chapter 24 — Databases and SQL**, a practical/applied chapter on how real data science work interacts with databases — a shift toward the book's final "real-world tooling" section.
+
+## 29. Chapter 24: Databases and SQL — Teaching
+
+### Why This Chapter Exists (A Deliberate Change of Pace)
+
+- Every prior chapter assumed your data was already a clean Python list/matrix in memory. Chapter 24 addresses the real-world reality: **most data lives in databases**, and you need to know how to get it out, filter it, and reshape it before any of your earlier tools can touch it.
+- **Framing:** this chapter is less about deep concepts and more about a practical skill every data scientist needs — think of it as translating operations you already understand (filtering, grouping, joining) into SQL's specific syntax and mental model.
+
+---
+
+### Concept 1 — Tables as the Database Version of a Matrix
+
+```python
+users = [[0, "Hero", 0], [1, "Dunn", 2], [2, "Sue", 3]]
+```
+
+- **Direct callback:** a database table is conceptually **identical** to Chapter 4's `Matrix` — rows are records, columns are fields. The only difference is *where* it lives (disk-backed, queryable database vs. in-memory Python list) and *how* you interact with it (SQL vs. direct indexing).
+
+---
+
+### Concept 2 — CREATE, INSERT, UPDATE, DELETE (The Basics)
+
+- Standard SQL operations for building and modifying tables.
+- **Practical translation:** these map directly to things you've already done in Python — `INSERT` is like `list.append()`, `UPDATE` is like modifying an item, `DELETE` is like `list.remove()`. The *concepts* aren't new; only the syntax and the fact that it's persisted to disk are new.
+
+---
+
+### Concept 3 — SELECT and WHERE (Filtering — Direct Callback to List Comprehensions)
+
+```sql
+SELECT * FROM users WHERE name = 'Dunn';
+```
+```python
+[user for user in users if user.name == 'Dunn']  # the Python equivalent, Ch2!
+```
+
+- **Oh, that's the idea!** `SELECT ... WHERE` is **literally a list comprehension with a filter condition** — same concept from Chapter 2, expressed in SQL's declarative syntax instead of Python's.
+
+---
+
+### Concept 4 — GROUP BY (Direct Callback to `Counter`/`defaultdict`)
+
+```sql
+SELECT COUNT(*) FROM users GROUP BY num_friends;
+```
+
+- **Direct callback:** this is conceptually identical to the `Counter`/`defaultdict` grouping pattern used **repeatedly** since Chapter 2 (word counts in Ch13/21, friend counts in Ch1) — SQL's `GROUP BY` does in one line what you've been manually building with dictionaries throughout the entire book.
+
+---
+
+### Concept 5 — JOIN (Combining Tables — A Genuinely New Operation)
+
+```sql
+SELECT users.name, interests.interest
+FROM users
+JOIN interests ON users.user_id = interests.user_id;
+```
+
+- **Interesting problem:** if user data and interest data live in two separate tables, how do you combine them into one usable dataset?
+- **Wait, why does that happen — why not just store everything in one giant table?** Splitting data into separate tables (normalization) avoids massive redundancy — you don't want to repeat a user's full name in every single row of their interests.
+- **Oh, that's the idea!** `JOIN` is the operation that **reconstructs** a combined view when you need it — matching rows across tables based on a shared key (like `user_id`). This is a genuinely new concept (not really foreshadowed in earlier chapters), because Python lists in memory don't typically need this kind of relational reconstruction.
+
+---
+
+### Concept 6 — NoSQL (Brief Mention)
+
+- Grus briefly contrasts relational (SQL) databases with NoSQL alternatives (document stores, key-value stores) — noting that unstructured or rapidly-changing data sometimes fits these better than rigid table schemas.
+- Not deeply explored — just enough for you to recognize the landscape exists.
+
+---
+
+### Chapter 24 — Big Picture Takeaway
+
+| SQL Concept | Python/Book Equivalent |
+|---|---|
+| Table | `Matrix` (Ch4) |
+| `SELECT ... WHERE` | List comprehension with filter (Ch2) |
+| `GROUP BY` | `Counter`/`defaultdict` pattern (Ch2, reused everywhere) |
+| `JOIN` | Genuinely new — combining normalized tables |
+
+**One-sentence takeaway:** *SQL isn't new logic — it's a declarative syntax for operations (filtering, grouping) you've been doing in Python since Chapter 2, plus one genuinely new tool (JOIN) for reconstructing data that's been split across tables.*
+
+---
+
+## 30. Chapter 25: MapReduce — Teaching
+
+### Why This Chapter Matters Conceptually (Even If Less Used Today)
+
+- **Interesting problem:** what if your dataset is too large to fit on **one machine** at all?
+- **Wait, why does that happen — how do you compute something like "word count across a billion documents" when no single computer can hold all the data?** You need to **split the work across many machines**, and combine their partial results.
+
+### Concept 1 — Map and Reduce, Conceptually
+
+```python
+def word_count_map(document):
+    for word in tokenize(document):  # Ch2's tokenize, from Naive Bayes Ch13!
+        yield (word, 1)
+
+def word_count_reduce(word, counts):
+    yield (word, sum(counts))
+```
+
+- **Map step:** each machine processes its **own chunk** of data independently, producing `(key, value)` pairs — here, `(word, 1)` for every word occurrence.
+- **Reduce step:** all the pairs sharing the same key get **combined** (summed, in this case) — potentially on a different machine — to produce the final result.
+- **Direct callback:** the *goal* here — counting word occurrences — is **exactly** the `Counter` pattern from Chapter 2/13/21. MapReduce is just that same idea, **distributed** across many machines instead of running in a single process's memory.
+
+### Concept 2 — Why This Matters Even Though Modern Tools (Spark, etc.) Have Largely Replaced Raw MapReduce
+
+- **Oh, that's the idea!** The *pattern* — split independent work (map), then combine results by key (reduce) — underlies nearly all distributed data processing systems, even modern ones. Understanding this pattern conceptually prepares you for **any** big-data tool, not just the specific (now largely legacy) MapReduce framework.
+
+### Chapter 25 — Big Picture Takeaway
+
+**One-sentence takeaway:** *MapReduce is the Counter pattern (Ch2) you've used all book long, scaled from "fits in memory on one machine" to "distributed across a data center" — same logical idea, different physical scale.*
+
+---
+
+## 31. Chapter 26: Where to Go Next — Brief Overview
+
+- Grus closes with pointers toward: real libraries (NumPy, pandas, scikit-learn, PyTorch/TensorFlow), further math (linear algebra, real calculus), specific subfields (deeper NLP, computer vision), and general advice: **read code, work on real projects, and don't stop at "from scratch" — now go use the powerful, optimized tools, armed with the understanding of what they're actually doing underneath.**
+- **Full-circle closing thought:** everything in the book was building toward one goal — **when you now open scikit-learn's documentation and see `LogisticRegression()`, `KMeans()`, or `MLPClassifier()`, you'll know exactly what's happening inside**, instead of treating them as magic.
+
+---
+
+# 📘 Book Complete — Full Roadmap Recap
+
+```
+Foundations (Ch1-10): Python idioms → Visualization → Linear Algebra → Statistics
+    → Probability → Hypothesis Testing → GRADIENT DESCENT (the hinge) → Data handling
+        ↓
+Supervised ML (Ch11-19): ML fundamentals → k-NN → Naive Bayes → Regression family
+    → Decision Trees → Neural Networks → Deep Learning
+        ↓
+Unsupervised + Applied (Ch20-25): Clustering → NLP → Network Analysis
+    → Recommender Systems → Databases → MapReduce
+```
+
+**The single deepest thread running through the entire book:**
+```
+dot() [Ch4] + gradient_step() [Ch8]
+    = the engine behind Linear Regression, Logistic Regression, 
+      Neural Networks, Deep Learning, Word Vectors, and Matrix Factorization
+
+distance() [Ch4] + vector_mean() [Ch4]
+    = the engine behind k-NN and k-Means Clustering
+
+Counter/defaultdict [Ch2]
+    = the engine behind word counts, graphs, n-grams, GROUP BY, and MapReduce
+```
+
+---
+
+We're now ready for your **Final Test** and **practice problems**, as requested. Given how much ground we've covered, I want to build this properly rather than rush it.

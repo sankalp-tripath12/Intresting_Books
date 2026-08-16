@@ -646,5 +646,3 @@ Learning Problem
 
 We've now covered the entire book conceptually — overview, all five tribes in depth, and the unification/climax chapter.
 
-Say **"Continue"** and I'll give you the **Final Comprehensive Test** — designed to check genuine understanding (not memorization), covering intuition, connections between tribes, and "why" questions, not just definitions.
-

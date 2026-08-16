@@ -1751,7 +1751,5 @@ When Buolamwini, Gebru, and Raji's findings became public, companies responded v
 4. How did Microsoft's and Amazon's responses to this research differ?
 5. Why is a lack of diversity among AI builders considered a technical problem, not just a social one?
 
----
-
-Say **"Continue"** for **Chapter 16: Weaponization**.
+--
 

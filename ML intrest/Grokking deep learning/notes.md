@@ -843,5 +843,3 @@ A plain RNN fails to connect "The trophy doesn't fit in the suitcase because it 
 
 **7. Embeddings Reasoning**
 Two words, "happy" and "joyful," end up with nearly identical embedding vectors after training — even though no one ever told the network they're synonyms. Explain *mechanically* how gradient descent produces this outcome.
-
-Take a genuine attempt at these (even rough answers) — reasoning through them is where real understanding solidifies. Send me your answers if you'd like me to check them, or say **"Skip to Final Test"** to go straight to the comprehensive test.
