@@ -557,3 +557,71 @@ Sample fix: *"A first-time contributor forks a repo, excited to make their first
 
 Say **"Continue"** when ready for the **Final Test
 
+**FINAL TEST — Made to Stick**
+
+Instructions: This tests genuine understanding, not memorization. Some questions have no single "correct" answer — they test whether you can apply the framework, not recite it. Answer in your own words. No rush — think before answering.
+
+---
+
+**SECTION A — Conceptual Understanding (explain in your own words)**
+
+1. Explain the Curse of Knowledge using the Tapper/Listener experiment. Why does "adding more detail" usually make the curse worse, not better?
+
+2. What is the difference between "Simple" (Ch.2) and "dumbing down"? Use the Commander's Intent example to explain.
+
+3. Explain the "guessing machine" concept from Chapter 3. Why must surprise be *relevant* to the core idea, not random shock value?
+
+4. What is the "Velcro theory of memory"? Why do abstract ideas fail this test while concrete ideas pass it?
+
+5. Explain the Sinatra Test. Give an original example (not from the book) of a claim that would pass it.
+
+6. What is "psychic numbing" / the "one vs. the mass" effect from Chapter 6? Why does citing a large statistic often backfire emotionally?
+
+7. Why are stories called a "flight simulator for the brain"? Name the three story archetypes and briefly describe each.
+
+8. Why does the book use the Kidney Heist urban legend TWICE — once in Ch.5 and again in Ch.8? What point is it making by doing so?
+
+---
+
+**SECTION B — Application (apply SUCCESs to new scenarios)**
+
+9. You're explaining binary search to someone who's never coded before. Write a 3–4 sentence explanation using at least 3 SUCCESs principles. Label which principles you used.
+
+10. Rewrite this weak project pitch using SUCCESs:
+    *"Our app helps students manage their study schedule using AI-powered recommendations."*
+    Identify what's currently missing, then rewrite it.
+
+11. You're in an interview and asked: "Tell me about a challenging bug you fixed." Structure your answer using ONE of the three story archetypes from Chapter 7. Which archetype fits best, and why?
+
+---
+
+**SECTION C — Diagnostic (find the missing ingredient)**
+
+For each example below, identify which SUCCESs letter(s) are weakest, and explain why:
+
+12. *"Our onboarding process has a 40% drop-off rate that we need to address."* (Missing: ___? Why?)
+
+13. *"This new caching layer reduces average response time."* (Missing: ___? Why?)
+
+14. *"You should switch to this database because it's more modern."* (Missing: ___? Why?)
+
+---
+
+**SECTION D — Synthesis (the real test of understanding)**
+
+15. In your own words, explain how Chapters 2–7 all trace back to solving the SAME root problem introduced in Chapter 1. Don't just list the six letters — explain the *logical chain* connecting them.
+
+16. The book claims stickiness techniques are "amoral" — they can spread both true and false ideas equally well (proven by the Kidney Heist legend). Given this, what responsibility does that place on YOU as a communicator (especially as someone who will write documentation, give interviews, and eventually mentor others)?
+
+17. Pick one concept from your own current learning (ML, DSA, DBMS — your choice) that you find hard to explain well. Apply the full SUCCESs checklist to it and write a genuinely improved explanation. This is the real test — if you can do this for something outside the book itself, you've internalized the framework, not just memorized it.
+
+---
+
+**How to know if you passed (self-check, not graded by rules):**
+
+- If you answered Section A by re-explaining concepts in YOUR words with YOUR examples (not the book's), you understand the theory.
+- If Section B felt natural rather than forced, you can apply it live.
+- If Section C took you under 10 seconds each, your "SUCCESs radar" is working automatically now.
+- If Q17 produced something you'd actually want to use in a real README or interview — that's the real finish line the book is aiming for: not "I read the book," but **"I now instinctively notice when an idea isn't sticking, and I know exactly which lever to pull to fix it."**
+
+Take your time on this. When you're ready, share your answers (all or some) and I'll give you real feedback — not just confirmation, but pushback where your explanation still leans abstract or unclear, the same way the book itself would demand.
